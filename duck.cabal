@@ -74,7 +74,7 @@ executable duck
         -- Alternative prelude.
         relude ^>= 1.2.0.0,
         -- Needed for github integration
-        process ^>= 1.6.0.0,
+        typed-process ^>= 0.2.0.0,
         -- Needed for JSON parsing
         aeson ^>= 2.2.0.0
 

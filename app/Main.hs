@@ -1,16 +1,7 @@
 module Main (main) where
 
+import Duck.GH (Ctx (..), Repo (..), pullRequestFetch)
 import Relude
-import System.Process (callProcess)
-
--- | A handle to a github repository.
---
--- Both the owner and the name of the repository are needed.
-data Repo = Repo
-  { owner :: Text,
-    name :: Text
-  }
-  deriving (Show)
 
 -- | Arguments to the program.
 data Args = Args
@@ -30,9 +21,9 @@ parseArgs = \case
 -- | Run the program, given the arguments.
 run :: Args -> IO ()
 run args = do
-  print args
+  let ctx = Ctx {repo = args.repo}
   putTextLn "Calling GH"
-  callProcess "gh" ["--version"]
+  pullRequestFetch ctx
 
 main :: IO ()
 main = getArgs >>= (map fromString >>> parseArgs >>> run)
