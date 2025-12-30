@@ -17,7 +17,9 @@
 
         haskellPackages = pkgs.haskellPackages.extend overlay;
       in rec {
-        defaultPackage = haskellPackages.duck;
+        defaultPackage = pkgs.buildPackages.writeShellScriptBin "duck" ''
+          exec env PATH=${pkgs.gh}/bin:$PATH ${haskellPackages.duck}/bin/duck "$@"
+        '';
 
         devShell = haskellPackages.shellFor {
           packages = p : [
@@ -27,6 +29,9 @@
             haskellPackages.ghc
             haskellPackages.cabal-install
             haskellPackages.haskell-language-server
+          ];
+          buildInputs = [
+            pkgs.gh
           ];
         };
       }

@@ -71,7 +71,9 @@ executable duck
     build-depends:
         base ^>=4.20.2.0,
         -- Alternative prelude.
-        relude ^>= 1.2.0.0
+        relude ^>= 1.2.0.0,
+        -- Needed for github integration
+        process ^>= 1.6.0.0
 
     -- Directories containing source files.
     hs-source-dirs:   app
