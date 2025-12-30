@@ -23,7 +23,8 @@ run :: Args -> IO ()
 run args = do
   let ctx = Ctx {repo = args.repo}
   putTextLn "Calling GH"
-  pullRequestFetch ctx
+  prs <- pullRequestFetch ctx
+  print prs
 
 main :: IO ()
 main = getArgs >>= (map fromString >>> parseArgs >>> run)

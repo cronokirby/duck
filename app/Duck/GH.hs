@@ -3,6 +3,7 @@ module Duck.GH (Repo (..), Ctx (..), pullRequestFetch) where
 import Control.Exception (throw)
 import Data.Aeson (Value, eitherDecode)
 import Data.Aeson.Types (Parser, parseEither)
+import Duck.GraphQl qualified as Q
 import Relude
 import System.Process.Typed (proc, readProcessStdout_)
 
@@ -34,40 +35,28 @@ ctxOwnerName ctx = case ctx.repo of
   Nothing -> (":owner", ":name")
   Just repo -> (repo.owner, repo.name)
 
-type GqlQuery = Text
-
-api :: GqlQuery -> (Value -> Parser Value) -> Ctx -> IO Value
-api query p ctx = do
+api :: Q.Query a -> Ctx -> IO a
+api query ctx = do
   out <- readProcessStdout_ (proc "gh" args)
-  parse_ p out
+  parse_ (Q.parse query) out
   where
     (owner, name) = ctxOwnerName ctx
     args =
       [ "api",
         "graphql",
         "-f",
-        "query=" <> toString query,
+        "query=" <> toString (Q.build query),
         "-f",
         "owner=" <> toString owner,
         "-f",
         "name=" <> toString name
       ]
 
-pullRequestFetch :: Ctx -> IO ()
-pullRequestFetch ctx = do
-  v <- api query return ctx
-  print v
-  where
-    query :: GqlQuery
-    query =
-      mconcat
-        [ "query($owner: String!, $name: String!) {",
-          "  repository(owner: $owner, name: $name) {",
-          "     pullRequests(first: 10, states: OPEN) {",
-          "     nodes {",
-          "       title",
-          "     } ",
-          "     }",
-          "  }",
-          "}"
-        ]
+pullRequestFetch :: Ctx -> IO [Text]
+pullRequestFetch =
+  api
+    $ Q.root [("$owner", "String!"), ("$name", "String!")]
+    $ Q.object "repository" [("owner", "$owner"), ("name", "$name")]
+    $ Q.object "pullRequests" [("first", "10"), ("states", "OPEN")]
+    $ Q.list "nodes" []
+    $ Q.field "title" Q.text
