@@ -29,6 +29,7 @@
             haskellPackages.ghc
             haskellPackages.cabal-install
             haskellPackages.haskell-language-server
+            haskellPackages.ormolu
           ];
           buildInputs = [
             pkgs.gh
