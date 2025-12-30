@@ -68,10 +68,28 @@ executable duck
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.20.2.0
+    build-depends:
+        base ^>=4.20.2.0,
+        -- Alternative prelude.
+        relude ^>= 1.2.0.0
 
     -- Directories containing source files.
     hs-source-dirs:   app
 
     -- Base language which the package is written in.
     default-language: GHC2024
+
+    -- Default extensions to apply in any module
+    default-extensions:
+        -- So that using an alternate prelude is easier.
+        NoImplicitPrelude,
+        -- So that using Text instead of String is easier.
+        OverloadedStrings,
+        -- Make data declarations strict by default.
+        --
+        -- This is perhaps controversial, but, imo, is the better default.
+        StrictData,
+        -- Better records.
+        DuplicateRecordFields,
+        NoFieldSelectors,
+        OverloadedRecordDot

@@ -11,18 +11,22 @@
           inherit system;
         };
 
-        project = pkgs.haskellPackages.callCabal2nix "duck" ./. {};
-      in rec {
-        defaultPackage = project;
+        overlay = final: prev: {
+          duck = final.callCabal2nix "duck" ./. {};
+        };
 
-        devShell = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [
+        haskellPackages = pkgs.haskellPackages.extend overlay;
+      in rec {
+        defaultPackage = haskellPackages.duck;
+
+        devShell = haskellPackages.shellFor {
+          packages = p : [
+            p.duck
+          ];
+          nativeBuildInputs = [
             haskellPackages.ghc
             haskellPackages.cabal-install
-          ];
-
-          buildInputs = [
-            project
+            haskellPackages.haskell-language-server
           ];
         };
       }
