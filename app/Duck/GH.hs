@@ -1,3 +1,5 @@
+{-# LANGUAGE ApplicativeDo #-}
+
 module Duck.GH (Repo (..), Ctx (..), pullRequestFetch) where
 
 import Control.Exception (throw)
@@ -57,7 +59,12 @@ api query ctx = do
 -- Specifically, information like the title, url, etc. but not the contents
 -- itself.
 data PullRequest = PullRequest
-  { title :: Text
+  { -- | The pull request number.
+    id :: Int,
+    -- | The title of the pull request.
+    title :: Text,
+    -- | A link to this pull request.
+    url :: Text
   }
   deriving (Show)
 
@@ -70,4 +77,8 @@ pullRequestFetch =
     $ Q.object "pullRequests" [("first", "10"), ("states", "OPEN")]
     $ Q.object "nodes" []
     $ Q.list
-    $ (PullRequest <$> Q.field "title" Q.text)
+    $ do
+      id' <- Q.field "number" Q.int
+      title <- Q.field "title" Q.text
+      url <- Q.field "url" Q.text
+      pure PullRequest {id = id', title, url}

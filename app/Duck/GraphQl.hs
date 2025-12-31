@@ -1,15 +1,15 @@
 -- | Contains utilities for creating GraphQl queries.
-module Duck.GraphQl (Query, build, parse, text, field, object, list, root) where
+module Duck.GraphQl (Query, build, parse, text, field, object, list, root, int) where
 
-import Data.Aeson (Value, withArray, withObject, (.:), (<?>))
+import Data.Aeson (FromJSON (parseJSON), Value, withArray, withObject, (.:), (<?>))
 import Data.Aeson.Key (fromText)
-import Data.Aeson.Types (JSONPathElement (Key), Parser, withText)
+import Data.Aeson.Types (JSONPathElement (Key), Parser)
 import Data.Foldable1 (foldlMap1')
 import Data.Text.Lazy.Builder qualified as B
 import Relude
 
 data Query a where
-  QText :: Query Text
+  QFromJSON :: (FromJSON a) => Query a
   QField :: Text -> Query a -> Query a
   QList :: Query a -> Query [a]
   QObject :: Text -> [(Text, Text)] -> Query a -> Query a
@@ -30,7 +30,7 @@ build = go >>> B.toLazyText >>> toStrict
   where
     go :: Query a -> B.Builder
     go = \case
-      QText -> mempty
+      QFromJSON -> mempty
       QField name _ -> B.fromText name
       QObject name args q ->
         B.fromText name <> goArgs args <> "{\n" <> go q <> "\n}"
@@ -53,7 +53,7 @@ parse = go ""
   where
     go :: String -> Query a -> Value -> Parser a
     go ctx q v = case q of
-      QText -> withText ctx return v
+      QFromJSON -> parseJSON v
       QField name q' -> (\f -> withObject ctx f v) $ \o -> do
         let name' = fromText name
         v' <- o .: name' <?> Key name'
@@ -70,7 +70,10 @@ parse = go ""
       QAp qf qa -> go ctx qf v <*> go ctx qa v
 
 text :: Query Text
-text = QText
+text = QFromJSON
+
+int :: Query Int
+int = QFromJSON
 
 field :: Text -> Query a -> Query a
 field = QField
