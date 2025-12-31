@@ -72,6 +72,7 @@ executable duck
     -- Other library packages from which modules are imported.
     build-depends:
         base ^>=4.20.2.0,
+        brick ^>= 2.9,
         -- Alternative prelude.
         relude ^>= 1.2.0.0,
         -- We need this for direct access to the builder methods.
