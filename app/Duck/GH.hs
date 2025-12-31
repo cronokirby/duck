@@ -10,7 +10,7 @@ import System.Process.Typed (proc, readProcessStdout_)
 newtype ParserM a = ParserM (ReaderT Value Parser a)
   deriving (Functor, Applicative, Monad)
 
-data ApiException = ApiParseException Text
+newtype ApiException = ApiParseException Text
   deriving (Show)
 
 -- | Parse a value from a lazy bytestring, throwing an exception on failure.
@@ -26,7 +26,7 @@ data Repo = Repo
   }
   deriving (Show)
 
-data Ctx = Ctx
+newtype Ctx = Ctx
   { repo :: Maybe Repo
   }
 

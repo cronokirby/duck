@@ -55,9 +55,9 @@ parse = goV ""
     goV :: String -> Query a -> Value -> Parser a
     goV ctx q v = case q of
       QText -> withText ctx return v
-      QField _ _ -> error "QField should be inside QObject or QList"
-      QObject _ _ _ -> error "QObject should be inside QRoot"
-      QList _ _ _ -> error "QList should be inside QRoot"
+      QField {} -> error "QField should be inside QObject or QList"
+      QObject {} -> error "QObject should be inside QRoot"
+      QList {} -> error "QList should be inside QRoot"
       QRoot _ qa -> (\f -> withObject "root" f v) $ \o -> do
         v' <- o .: "data" <?> Key "data"
         withObject "data" (goO "data" qa) v'

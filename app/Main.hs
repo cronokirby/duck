@@ -4,7 +4,7 @@ import Duck.GH (Ctx (..), Repo (..), pullRequestFetch)
 import Relude
 
 -- | Arguments to the program.
-data Args = Args
+newtype Args = Args
   { -- | If present, use a specific repository.
     repo :: Maybe Repo
   }
