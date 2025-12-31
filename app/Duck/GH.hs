@@ -1,6 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Duck.GH (Repo (..), Ctx (..), pullRequestFetch) where
+module Duck.GH (Repo (..), Ctx (..), pullRequestFetch, PullRequest (..)) where
 
 import Control.Exception (throw)
 import Data.Aeson (Value, eitherDecode)
