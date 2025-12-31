@@ -74,7 +74,12 @@ pullRequestFetch =
   api
     $ Q.root [("$owner", "String!"), ("$name", "String!")]
     $ Q.object "repository" [("owner", "$owner"), ("name", "$name")]
-    $ Q.object "pullRequests" [("first", "10"), ("states", "OPEN")]
+    $ Q.object
+      "pullRequests"
+      [ ("first", "100"),
+        ("states", "OPEN"),
+        ("orderBy", "{field: UPDATED_AT, direction: DESC}")
+      ]
     $ Q.object "nodes" []
     $ Q.list
     $ do
