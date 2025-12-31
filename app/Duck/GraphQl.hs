@@ -1,7 +1,7 @@
 -- | Contains utilities for creating GraphQl queries.
 module Duck.GraphQl (Query, build, parse, text, field, object, list, root) where
 
-import Data.Aeson (Object, Value (Object), withArray, withObject, (.:), (<?>))
+import Data.Aeson (Value, withArray, withObject, (.:), (<?>))
 import Data.Aeson.Key (fromText)
 import Data.Aeson.Types (JSONPathElement (Key), Parser, withText)
 import Data.Foldable1 (foldlMap1')
@@ -11,7 +11,7 @@ import Relude
 data Query a where
   QText :: Query Text
   QField :: Text -> Query a -> Query a
-  QList :: Text -> [(Text, Text)] -> Query a -> Query [a]
+  QList :: Query a -> Query [a]
   QObject :: Text -> [(Text, Text)] -> Query a -> Query a
   QRoot :: [(Text, Text)] -> Query a -> Query a
   QPure :: a -> Query a
@@ -34,8 +34,7 @@ build = go >>> B.toLazyText >>> toStrict
       QField name _ -> B.fromText name
       QObject name args q ->
         B.fromText name <> goArgs args <> "{\n" <> go q <> "\n}"
-      QList name args q ->
-        B.fromText name <> goArgs args <> "{\n" <> go q <> "\n}"
+      QList q -> go q
       QRoot args q ->
         "query" <> goArgs args <> "{\n" <> go q <> "\n}"
       QPure _ -> mempty
@@ -50,35 +49,25 @@ build = go >>> B.toLazyText >>> toStrict
         j acc x = acc <> ", " <> m x
 
 parse :: Query a -> Value -> Parser a
-parse = goV ""
+parse = go ""
   where
-    goV :: String -> Query a -> Value -> Parser a
-    goV ctx q v = case q of
+    go :: String -> Query a -> Value -> Parser a
+    go ctx q v = case q of
       QText -> withText ctx return v
-      QField {} -> error "QField should be inside QObject or QList"
-      QObject {} -> error "QObject should be inside QRoot"
-      QList {} -> error "QList should be inside QRoot"
-      QRoot _ qa -> (\f -> withObject "root" f v) $ \o -> do
-        v' <- o .: "data" <?> Key "data"
-        withObject "data" (goO "data" qa) v'
-      QPure a -> pure a
-      QAp qf qa -> goV ctx qf v <*> goV ctx qa v
-    goO :: String -> Query a -> Object -> Parser a
-    goO ctx q o = case q of
-      QField name q' ->
+      QField name q' -> (\f -> withObject ctx f v) $ \o -> do
         let name' = fromText name
-         in (o .: name' <?> Key name') >>= goV ctx q'
-      QObject name _ qa -> do
-        let nameK = fromText name
-        let nameS = toString name
-        v' <- o .: nameK <?> Key nameK
-        withObject nameS (goO nameS qa) v'
-      QList name _ qa -> do
-        let nameK = fromText name
-        let nameS = toString name
-        v' <- o .: nameK <?> Key nameK
-        withArray nameS (traverse (withObject nameS (goO nameS qa)) >>> fmap toList) v'
-      q' -> goV ctx q' (Object o)
+        v' <- o .: name' <?> Key name'
+        go (toString name) q' v'
+      QObject name _ q' -> (\f -> withObject ctx f v) $ \o -> do
+        let name' = fromText name
+        v' <- o .: name' <?> Key name'
+        go (toString name) q' v'
+      QRoot _ q' -> (\f -> withObject "root" f v) $ \o -> do
+        v' <- o .: "data" <?> Key "data"
+        go "data" q' v'
+      QList q' -> withArray ctx (traverse (go ctx q') >>> fmap toList) v
+      QPure a -> pure a
+      QAp qf qa -> go ctx qf v <*> go ctx qa v
 
 text :: Query Text
 text = QText
@@ -86,7 +75,7 @@ text = QText
 field :: Text -> Query a -> Query a
 field = QField
 
-list :: Text -> [(Text, Text)] -> Query a -> Query [a]
+list :: Query a -> Query [a]
 list = QList
 
 object :: Text -> [(Text, Text)] -> Query a -> Query a

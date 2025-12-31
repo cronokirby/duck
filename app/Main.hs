@@ -24,7 +24,7 @@ run args = do
   let ctx = Ctx {repo = args.repo}
   putTextLn "Calling GH"
   prs <- pullRequestFetch ctx
-  print prs
+  for_ prs print
 
 main :: IO ()
 main = getArgs >>= (map fromString >>> parseArgs >>> run)

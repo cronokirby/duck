@@ -52,11 +52,22 @@ api query ctx = do
         "name=" <> toString name
       ]
 
-pullRequestFetch :: Ctx -> IO [Text]
+-- | An overview of a pull request.
+--
+-- Specifically, information like the title, url, etc. but not the contents
+-- itself.
+data PullRequest = PullRequest
+  { title :: Text
+  }
+  deriving (Show)
+
+-- | Fetch the list of pull requests, given a context.
+pullRequestFetch :: Ctx -> IO [PullRequest]
 pullRequestFetch =
   api
     $ Q.root [("$owner", "String!"), ("$name", "String!")]
     $ Q.object "repository" [("owner", "$owner"), ("name", "$name")]
     $ Q.object "pullRequests" [("first", "10"), ("states", "OPEN")]
-    $ Q.list "nodes" []
-    $ Q.field "title" Q.text
+    $ Q.object "nodes" []
+    $ Q.list
+    $ (PullRequest <$> Q.field "title" Q.text)
