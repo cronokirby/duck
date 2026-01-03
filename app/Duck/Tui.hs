@@ -3,6 +3,7 @@ module Duck.Tui (runTui) where
 import Brick qualified as B
 import Brick.Keybindings qualified as B
 import Brick.Main (App (..))
+import Brick.Widgets.Border qualified as B
 import Brick.Widgets.Border.Style qualified as B
 import Duck.GH (Repo)
 import Graphics.Vty qualified as B
@@ -21,7 +22,7 @@ keyConfig =
         ]
     )
     [ (NextTab, [B.bind '\t']),
-      (PreviousTab, [B.shift '\t']),
+      (PreviousTab, [B.bind B.KBackTab]),
       (Halt, [B.bind 'q', B.bind B.KEsc])
     ]
     []
@@ -68,15 +69,38 @@ attrMap = B.attrMap B.defAttr (styles & map (\(n, a) -> (B.attrName (show n), a)
         )
       ]
 
-drawTab :: Text -> B.Widget n
-drawTab t = B.padLeftRight 1 (B.txt t)
+withStyle :: StyleRole -> B.Widget n -> B.Widget n
+withStyle r = B.withAttr (B.attrName (show r))
+
+drawTab :: Bool -> Text -> B.Widget n
+drawTab focused t = inner
+  where
+    modifier =
+      if focused
+        then withStyle StyleFocused
+        else id
+    inner = modifier $ B.padLeftRight 1 (B.txt t)
+
+draw :: AppState -> B.Widget n
+draw s =
+  B.withBorderStyle B.unicode . B.joinBorders . B.borderWithLabel (B.txt "Duck") . B.vLimit 1 $ tabs
+  where
+    tabs =
+      B.hBox
+        [ oneTab ("PRs", PrListTab),
+          B.vBorder,
+          oneTab ("#1023", PrTab),
+          B.vBorder,
+          oneTab ("File", OpenFileTab),
+          B.vBorder,
+          B.fill ' '
+        ]
+    oneTab (name, tab) = drawTab (s.which == tab) name
 
 app :: App AppState Event ()
 app =
   App
-    { appDraw = \_ ->
-        [ B.withBorderStyle B.unicode . B.hBox . map drawTab $ ["PRs", "#1000", "Files"]
-        ],
+    { appDraw = pure <$> draw,
       appChooseCursor = \_ _ -> Nothing,
       appHandleEvent = \case
         B.VtyEvent (B.EvKey k ms) -> do
